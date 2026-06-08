@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>풍선 타워 디펜스 5 — Decrypted Ruffle Launcher</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <link rel="icon" href="favicon.png?v=20260607-btd5-decrypted-v1" type="image/png" />
+  <link rel="stylesheet" href="styles.css?v=20260607-btd5-decrypted-v1" />
+  <style>
+    html, body { margin:0; width:100%; height:100%; background:#050912; color:#eaf9ff; overflow:hidden; }
+    .stage ruffle-player { width:100%; height:100%; display:block; }
+    .build-badge { position:fixed; left:220px; top:7px; z-index:9999; padding:5px 8px; border:1px solid rgba(0,213,255,.45); border-radius:8px; background:rgba(0,0,0,.55); color:#8feaff; font:700 12px Consolas,monospace; }
+    .diag-box { position:fixed; right:10px; bottom:10px; z-index:99999; max-width:min(820px,calc(100vw - 20px)); max-height:38vh; overflow:auto; background:rgba(0,0,0,.86); border:1px solid rgba(0,213,255,.45); color:#ddfbff; border-radius:10px; padding:9px 11px; font:12px/1.45 Consolas,monospace; box-shadow:0 8px 28px rgba(0,0,0,.45); }
+    .diag-box summary { cursor:pointer; color:#8feaff; font-weight:700; }
+    .diag-box pre { white-space:pre-wrap; word-break:break-word; margin:8px 0 0; }
+    .hard-error { width:100%; height:100%; display:flex; align-items:center; justify-content:center; text-align:center; box-sizing:border-box; padding:24px; background:linear-gradient(180deg,#202840,#0b1020); color:#fff; }
+    .hard-error code { display:block; margin-top:12px; color:#8feaff; white-space:pre-wrap; word-break:break-word; }
+    @media (max-width:760px) { .build-badge { left:10px; top:8px; } .diag-box { left:8px; right:8px; } }
+  </style>
+  <script>
+    window.RufflePlayer = window.RufflePlayer || {};
+    window.RufflePlayer.config = Object.assign({}, window.RufflePlayer.config || {}, {
+      publicPath: "ruffle/",
+      autoplay: "on",
+      unmuteOverlay: "hidden",
+      backgroundColor: "#000000",
+      letterbox: "on",
+      showSwfDownload: false,
+      favorFlash: false,
+      warnOnUnsupportedContent: false,
+      allowScriptAccess: true,
+      allowNetworking: "all",
+      openUrlMode: "deny",
+      logLevel: "warn"
+    });
+  </script>
+  <script src="ruffle/ruffle.js?v=20260607-btd5-decrypted-v1"></script>
+</head>
+<body>
+  <div class="scanlines" aria-hidden="true"></div>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="build-badge">20260607-btd5-decrypted-v1 · MochiCrypt 해제본</div>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="logo-block"><div class="logo-text"><span class="logo-title">풍선 타워 디펜스</span><span class="logo-title accent">5</span></div></div>
+      <nav class="controls">
+        <p class="controls-label">CONTROLS</p>
+        <button id="btnReload" class="ctrl-btn"><span class="ctrl-icon">↺</span><span class="ctrl-text">다시 로드</span></button>
+        <button id="btnFullscreen" class="ctrl-btn"><span class="ctrl-icon">⛶</span><span class="ctrl-text">전체화면</span></button>
+        <label class="ctrl-btn file-label" for="fileInput"><span class="ctrl-icon">⊕</span><span class="ctrl-text">SWF 열기</span><input id="fileInput" type="file" accept=".swf" /></label>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="topbar"><div class="topbar-left"><span class="status-dot loading" id="statusDot"></span><span class="status-text" id="statusText">초기화 중...</span></div></div>
+      <div class="stage-wrap">
+        <div class="stage-corner tl"></div><div class="stage-corner tr"></div><div class="stage-corner bl"></div><div class="stage-corner br"></div>
+        <div id="stage" class="stage" aria-label="게임 무대" tabindex="0"></div>
+      </div>
+      <div class="bottombar"><details class="faq-inline"><summary>실행 안 될 때</summary><div class="faq-body"><p>이 버전은 원본 MochiCrypt 래퍼가 아니라 복호화된 <code>assets/game.swf</code>를 실행합니다.</p><p>업로드 후에도 똑같은 빨간 화면이면, 이 페이지 상단에 <code>20260607-btd5-decrypted-v1</code> 배지가 보이는지 먼저 확인하세요.</p></div></details></div>
+    </main>
+  </div>
+  <details class="diag-box" open><summary>실행 진단</summary><pre id="diag">진단 준비 중...</pre></details>
+  <script>
+    const BUILD = "20260607-btd5-decrypted-v1";
+    const META = {"mochi": true, "payload_id": 7, "decrypted_size": 14895595};
+    const SWF_URL = "assets/game.swf?v=" + BUILD;
+    const FALLBACK_URLS = [SWF_URL, "game.swf?v=" + BUILD, "assets/풍선 타워 디펜스 5.swf?v=" + BUILD, "assets/풍선_타워_디펜스_5.swf?v=" + BUILD];
+    const stage = document.getElementById('stage');
+    const diag = document.getElementById('diag');
+    const statusDot = document.getElementById('statusDot');
+    const statusText = document.getElementById('statusText');
+    const btnReload = document.getElementById('btnReload');
+    const btnFullscreen = document.getElementById('btnFullscreen');
+    const fileInput = document.getElementById('fileInput');
+    let player = null;
+    function setStatus(cls, text) { statusDot.className = 'status-dot ' + cls; statusText.textContent = text; }
+    function log(line) { diag.textContent += "\n" + line; }
+    function errText(e) { return e && (e.stack || e.message) ? (e.stack || e.message) : String(e); }
+    async function checkFile(url) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        const buf = await res.clone().arrayBuffer();
+        const bytes = new Uint8Array(buf.slice(0, 8));
+        const magic = String.fromCharCode(bytes[0]||0, bytes[1]||0, bytes[2]||0);
+        return `${url} -> HTTP ${res.status}, size=${buf.byteLength}, magic=${magic}`;
+      } catch(e) { return `${url} -> FETCH_ERROR: ${errText(e)}`; }
+    }
+    async function makePlayer() {
+      const ruffle = window.RufflePlayer && window.RufflePlayer.newest && window.RufflePlayer.newest();
+      if (!ruffle) throw new Error('RufflePlayer.newest() 없음: ruffle/ 폴더가 누락됐거나 ruffle.js가 로드되지 않았습니다.');
+      stage.innerHTML = '';
+      player = ruffle.createPlayer();
+      player.style.width = '100%';
+      player.style.height = '100%';
+      player.style.display = 'block';
+      stage.appendChild(player);
+      return player;
+    }
+    async function loadUrl(url) {
+      await makePlayer();
+      try {
+        await player.load({ url });
+      } catch(e1) {
+        log(`player.load({url}) 실패(${url}): ${errText(e1)}`);
+        await player.load(url);
+      }
+    }
+    async function boot() {
+      setStatus('loading', '로딩 중...');
+      diag.textContent = `build=${BUILD} / swf=decrypted-mochicrypt`;
+      log('meta: ' + JSON.stringify(META));
+      log(await checkFile('assets/game.swf?v=' + BUILD));
+      log(await checkFile('ruffle/ruffle.js?v=' + BUILD));
+      let lastErr = null;
+      for (const url of FALLBACK_URLS) {
+        try {
+          log('로드 시도: ' + url);
+          await loadUrl(url);
+          setStatus('ok', '실행 중');
+          log('로드 호출 완료: ' + url);
+          return;
+        } catch(e) {
+          lastErr = e;
+          log('로드 실패: ' + url + ' -> ' + errText(e));
+        }
+      }
+      setStatus('error', '로드 실패');
+      stage.innerHTML = `<div class="hard-error"><div><h2>실행 실패</h2><p>아래 실행 진단 내용을 캡처해서 보내주세요.</p><code>${String(lastErr ? errText(lastErr) : 'unknown').replace(/[<>&]/g, s => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[s]))}</code></div></div>`;
+    }
+    btnReload.addEventListener('click', boot);
+    btnFullscreen.addEventListener('click', () => { if (player && player.requestFullscreen) player.requestFullscreen(); else stage.requestFullscreen && stage.requestFullscreen(); });
+    fileInput.addEventListener('change', async e => { const f = e.target.files && e.target.files[0]; if (!f) return; try { await loadUrl(URL.createObjectURL(f)); setStatus('ok','실행 중'); } catch(err) { setStatus('error','로드 실패'); log('사용자 SWF 실패: ' + errText(err)); } });
+    window.addEventListener('error', e => log('window.error: ' + e.message));
+    window.addEventListener('unhandledrejection', e => log('unhandledrejection: ' + errText(e.reason)));
+    document.addEventListener('DOMContentLoaded', boot);
+  </script>
+</body>
+</html>
